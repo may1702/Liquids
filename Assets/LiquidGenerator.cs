@@ -25,8 +25,11 @@ namespace uFlex {
             int dimY = 1;
             int dimZ = 1;
 
+            float size = 0.5f;
+            float spacing = 0.5f;
 
-            if (count > 1)
+
+            if (count > 5)
             {
                 count = 0;
                 shouldSpawn = true;
@@ -34,7 +37,6 @@ namespace uFlex {
 
             if (shouldSpawn && Input.GetKey(KeyCode.L))
             {
-                print("a");
                 GameObject liquid = new GameObject("liquid");
                 liquid.SetActive(false);
                 liquid.transform.position = new Vector3(Syringe.transform.position.x - 0.5f, Syringe.transform.position.y, Syringe.transform.position.z + 2f);
@@ -55,7 +57,7 @@ namespace uFlex {
                 part.m_colour = Color.blue;
                 part.m_interactionType = FlexInteractionType.Fluid;
                 part.m_collisionGroup = -1;
-                part.m_bounds.SetMinMax(new Vector3(), new Vector3(dimX * 1, dimY * 1, dimZ * 1));
+                part.m_bounds.SetMinMax(new Vector3(), new Vector3(dimX * spacing, dimY * spacing, dimZ * spacing));
                 part.m_type = FlexBodyType.Fluid;
 
                 part.m_initialVelocity = new Vector3(0f, 0f, 12f);
@@ -70,7 +72,7 @@ namespace uFlex {
                         for (int z = 0; z < dimZ; z++)
                         {
 
-                            part.m_particles[i].pos = new Vector3(x, y, z) * 1;
+                            part.m_particles[i].pos = new Vector3(x, y, z) * spacing;
                             part.m_particles[i].invMass = invMass;
                             //   flexBody.m_colours[i] = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value, 1.0f);
                             part.m_colours[i] = Color.blue;
@@ -93,23 +95,23 @@ namespace uFlex {
                 particles.Add(part);
                 liquids.Add(liquid);
 
-                Debug.Log("After adding to arraylists");
-
                 liquid.AddComponent<FlexParticlesRenderer>();
-                liquid.GetComponent<FlexParticlesRenderer>().m_size = 0.1f;
+                liquid.GetComponent<FlexParticlesRenderer>().m_size = size;
                 liquid.GetComponent<FlexParticlesRenderer>().m_radius = 0.1f;
                 //liquid.GetComponent<FlexParticlesRenderer>().m_minDensity = 0.01f;
                 //liquid.GetComponent<FlexParticlesRenderer>().m_showDensity = true;
                 shouldSpawn = false;
 
                 liquid.AddComponent<SphereCollider>();
-                liquid.GetComponent<SphereCollider>().radius = 0.05f;
+                liquid.GetComponent<SphereCollider>().radius = 0.22f;
+                liquid.AddComponent<Rigidbody>();
+                liquid.GetComponent<Rigidbody>().useGravity = false;
+                liquid.GetComponent<Rigidbody>().isKinematic = false;
+                liquid.GetComponent<Rigidbody>().collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
                 liquid.SetActive(true);
 
                 liquid.layer = LIQUID_LAYER;
-
-                Debug.Log("After adding layer");
             }
 
             for (int y = 0; y < liquids.Count; y++)
@@ -125,12 +127,19 @@ namespace uFlex {
             count++;
         }
 
-        void onCollisionEnter(Collision collision)
+        void OnCollisionEnter(Collision collision)
         {
             if (collision.collider.gameObject.layer.Equals(LIQUID_LAYER) /*&& Input.GetKey(KeyCode.D)*/)
             {
-                Destroy(collision.collider.gameObject);
-                Debug.Log("Deleted");
+                GameObject particle = collision.collider.gameObject;
+                liquids.Remove(particle);
+                Particle[] parts = particle.GetComponent<FlexParticles>().m_particles;
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    particles.Remove(parts[i]);
+                }
+
+                Destroy(particle);
             }
         }
     }
